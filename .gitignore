@@ -1,0 +1,7 @@
+venv/
+openai_api_key
+output/
+input/
+*.pyc
+__pycache__/
+.DS_Store
