@@ -39,7 +39,7 @@ VISION_PROVIDER = "openai"
 VISION_MODEL_OPENAI    = "gpt-4o-mini"          # cheap and plenty good for print
 VISION_MODEL_ANTHROPIC = "claude-opus-4-7"      # used only if VISION_PROVIDER = "anthropic"
 
-TTS_MODEL    = "tts-1"                 # OpenAI's cheap/fast TTS
+TTS_MODEL    = "tts-1-hd"              # OpenAI's high quality TTS
 TTS_VOICE    = "nova"                  # try: alloy, echo, fable, nova, shimmer
 TTS_SPEED    = 0.9                     # slower for a 4-year-old
 PAGE_TAIL_SILENCE_SEC = 0.75           # beat between pages so last word lands
@@ -119,12 +119,13 @@ def extract_text_from_page(image_path: Path, vision_client) -> str:
 # ---------------------------------------------------------------------------
 
 def generate_narration(text: str, output_path: Path, openai_client: OpenAI) -> None:
-    """Generate an mp3 of the narration using OpenAI TTS."""
+    """Generate a wav of the narration using OpenAI TTS."""
     with openai_client.audio.speech.with_streaming_response.create(
         model=TTS_MODEL,
         voice=TTS_VOICE,
         input=text,
         speed=TTS_SPEED,
+        response_format="wav",
     ) as response:
         response.stream_to_file(output_path)
 
@@ -273,7 +274,7 @@ def main(input_dir: Path, output_video: Path) -> None:
     segments: list[Path] = []
     for i, image_path in enumerate(page_images, start=1):
         text_path    = work_dir / f"text_{i:03d}.txt"
-        audio_path   = work_dir / f"audio_{i:03d}.mp3"
+        audio_path   = work_dir / f"audio_{i:03d}.wav"
         segment_path = work_dir / f"segment_{i:03d}.mp4"
 
         # --- Step 1: extract text (cached to disk) ---
