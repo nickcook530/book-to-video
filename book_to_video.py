@@ -39,9 +39,16 @@ VISION_PROVIDER = "openai"
 VISION_MODEL_OPENAI    = "gpt-4o-mini"          # cheap and plenty good for print
 VISION_MODEL_ANTHROPIC = "claude-opus-4-7"      # used only if VISION_PROVIDER = "anthropic"
 
-TTS_MODEL    = "tts-1-hd"              # OpenAI's high quality TTS
-TTS_VOICE    = "nova"                  # try: alloy, echo, fable, nova, shimmer
-TTS_SPEED    = 0.9                     # slower for a 4-year-old
+TTS_MODEL    = "gpt-4o-mini-tts"       # steerable TTS — accepts `instructions`
+TTS_VOICE    = "ballad"                # try: ballad, sage, coral, verse, nova
+TTS_SPEED    = 1.0                     # let `instructions` handle pacing; <1 adds artifacts
+TTS_INSTRUCTIONS = (
+    "You are reading a picture book aloud to a 4-year-old at bedtime. "
+    "Speak warmly and gently, with a slow, unhurried pace. "
+    "Pause briefly at commas and longer at periods. "
+    "Bring quiet wonder to descriptive moments and a soft, playful lift to dialogue. "
+    "Pronounce every word clearly. Do not rush."
+)
 PAGE_TAIL_SILENCE_SEC = 0.75           # beat between pages so last word lands
 
 # When a page has no readable text (title page, blank, pure illustration),
@@ -125,6 +132,7 @@ def generate_narration(text: str, output_path: Path, openai_client: OpenAI) -> N
         voice=TTS_VOICE,
         input=text,
         speed=TTS_SPEED,
+        instructions=TTS_INSTRUCTIONS,
         response_format="wav",
     ) as response:
         response.stream_to_file(output_path)
