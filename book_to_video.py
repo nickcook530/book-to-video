@@ -40,14 +40,14 @@ VISION_MODEL_OPENAI    = "gpt-4o-mini"          # cheap and plenty good for prin
 VISION_MODEL_ANTHROPIC = "claude-opus-4-7"      # used only if VISION_PROVIDER = "anthropic"
 
 TTS_MODEL    = "gpt-4o-mini-tts"       # steerable TTS — accepts `instructions`
-TTS_VOICE    = "ballad"                # try: ballad, sage, coral, verse, nova
+TTS_VOICE    = "sage"                # try: ballad, sage, coral, verse, nova
 TTS_SPEED    = 1.0                     # let `instructions` handle pacing; <1 adds artifacts
 TTS_INSTRUCTIONS = (
-    "You are reading a picture book aloud to a 4-year-old at bedtime. "
-    "Speak warmly and gently, with a slow, unhurried pace. "
+    "You are reading a picture book aloud to a child at bedtime. "
+    "Speak warmly and gently."
     "Pause briefly at commas and longer at periods. "
     "Bring quiet wonder to descriptive moments and a soft, playful lift to dialogue. "
-    "Pronounce every word clearly. Do not rush."
+    "Pronounce every word clearly."
 )
 PAGE_TAIL_SILENCE_SEC = 0.75           # beat between pages so last word lands
 
