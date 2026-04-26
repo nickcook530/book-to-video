@@ -242,6 +242,18 @@ def concatenate_segments(segment_paths: list[Path], output_path: Path, work_dir:
     _run_ffmpeg(cmd)
 
 
+def extract_audio_to_mp3(video_path: Path, audio_path: Path) -> None:
+    """Pull the audio track out of the final video into a standalone mp3."""
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(video_path),
+        "-vn",
+        "-c:a", "libmp3lame", "-b:a", "192k",
+        str(audio_path),
+    ]
+    _run_ffmpeg(cmd)
+
+
 # ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
@@ -303,6 +315,10 @@ def main(input_dir: Path, output_video: Path) -> None:
 
     print(f"Concatenating {len(segments)} segments -> {output_video}")
     concatenate_segments(segments, output_video, work_dir)
+
+    output_audio = output_video.with_suffix(".mp3")
+    print(f"Extracting narration audio -> {output_audio}")
+    extract_audio_to_mp3(output_video, output_audio)
     print("Done.")
 
 
