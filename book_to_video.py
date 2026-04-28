@@ -50,7 +50,9 @@ TTS_INSTRUCTIONS = (
     "Speak warmly and gently."
     "Pause briefly at commas and longer at periods. "
     "Bring quiet wonder to descriptive moments and a soft, playful lift to dialogue. "
-    "Pronounce every word clearly."
+    "Pronounce every word clearly. "
+    "Read every sentence in the input exactly as written. "
+    "Do not skip, summarize, paraphrase, reorder, or add any text."
 )
 PAGE_TAIL_SILENCE_SEC = 0.75           # beat between pages so last word lands
 
@@ -312,8 +314,12 @@ def convert_pdf_to_video(pdf_path: Path) -> Path:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
     print(f"Book: {book_name}")
-    print(f"Rendering PDF pages -> {image_dir}")
-    pdf_to_page_images(pdf_path, image_dir)
+    existing_pages = list(image_dir.glob("page-*.jpg")) if image_dir.exists() else []
+    if existing_pages:
+        print(f"Reusing {len(existing_pages)} cached page images in {image_dir}")
+    else:
+        print(f"Rendering PDF pages -> {image_dir}")
+        pdf_to_page_images(pdf_path, image_dir)
 
     run_pipeline(image_dir, output_video)
     return output_video
