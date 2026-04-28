@@ -1,22 +1,25 @@
 """
-book_to_video.py — Turn a folder of page images into a narrated video.
+book_to_video.py — Turn a PDF of a children's book into a narrated video.
 
 Usage:
-    python book_to_video.py ./input/my_book ./output/my_book.mp4
+    python book_to_video.py path/to/my_book.pdf
 
-Folder layout expected:
-    ./input/my_book/
-        page_01.jpg
-        page_02.jpg
-        ...
+The book name is derived from the PDF filename. Outputs land at:
+    ./input/<book_name>/page-NN.jpg     (extracted page images)
+    ./output/<book_name>.mp4            (final narrated video)
+    ./output/<book_name>.mp3            (narration audio only)
 
 Pipeline per page:
     image -> [vision model] -> text -> [TTS] -> audio -> [ffmpeg] -> video segment
 Then all segments are concatenated into the final video.
+
+Re-running on the same PDF reuses cached per-page text/audio/segments under
+./output/.<book_name>_work/, so you can tweak settings cheaply.
 """
 
 import base64
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -61,8 +64,7 @@ EXTRACTION_PROMPT = (
     "Extract ONLY the text that should be read aloud as narration. "
     "Preserve the original wording exactly — do not paraphrase. "
     "Ignore page numbers, publisher info, and decorative text. "
-    "If the page has no narratable text (e.g. pure illustration, blank, "
-    "or title page with only the book title), respond with exactly: NO_TEXT"
+    "If the page has no narratable text (e.g. pure illustration, blank, etc.) respond with exactly: NO_TEXT"
 )
 
 # ---------------------------------------------------------------------------
@@ -263,10 +265,61 @@ def extract_audio_to_mp3(video_path: Path, audio_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# PDF -> page images
+# ---------------------------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+INPUT_ROOT   = PROJECT_ROOT / "input"
+OUTPUT_ROOT  = PROJECT_ROOT / "output"
+
+
+def book_name_from_pdf(pdf_path: Path) -> str:
+    """Sanitize a PDF filename into a folder-safe book name."""
+    stem = pdf_path.stem.lower()
+    stem = re.sub(r"[^a-z0-9]+", "_", stem).strip("_")
+    if not stem:
+        raise ValueError(f"Could not derive a book name from: {pdf_path.name}")
+    return stem
+
+
+def pdf_to_page_images(pdf_path: Path, image_dir: Path) -> None:
+    """Run pdftoppm to render each PDF page as a JPEG into image_dir.
+
+    pdftoppm zero-pads page numbers to match the total digit count, so the
+    sorted() in run_pipeline() picks them up in the right order.
+    """
+    image_dir.mkdir(parents=True, exist_ok=True)
+    cmd = ["pdftoppm", "-jpeg", "-r", "150", str(pdf_path), str(image_dir / "page")]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        raise subprocess.CalledProcessError(result.returncode, cmd)
+
+
+# ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
 
-def main(input_dir: Path, output_video: Path) -> None:
+def convert_pdf_to_video(pdf_path: Path) -> Path:
+    """End-to-end: PDF in, narrated MP4 out. Returns the output video path."""
+    pdf_path = Path(pdf_path).expanduser().resolve()
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"PDF not found: {pdf_path}")
+
+    book_name = book_name_from_pdf(pdf_path)
+    image_dir    = INPUT_ROOT  / book_name
+    output_video = OUTPUT_ROOT / f"{book_name}.mp4"
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+
+    print(f"Book: {book_name}")
+    print(f"Rendering PDF pages -> {image_dir}")
+    pdf_to_page_images(pdf_path, image_dir)
+
+    run_pipeline(image_dir, output_video)
+    return output_video
+
+
+def run_pipeline(input_dir: Path, output_video: Path) -> None:
     openai_client = OpenAI()   # reads OPENAI_API_KEY from env
 
     if VISION_PROVIDER == "openai":
@@ -331,6 +384,6 @@ def main(input_dir: Path, output_video: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit("Usage: python book_to_video.py <input_dir> <output_video.mp4>")
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    if len(sys.argv) != 2:
+        sys.exit("Usage: python book_to_video.py <path/to/book.pdf>")
+    convert_pdf_to_video(Path(sys.argv[1]))
