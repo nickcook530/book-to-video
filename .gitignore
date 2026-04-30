@@ -2,6 +2,7 @@ venv/
 openai_api_key
 output/
 input/
+uploads/
 *.pyc
 __pycache__/
 .DS_Store
