@@ -65,7 +65,9 @@ EXTRACTION_PROMPT = (
     "This is a page from a children's picture book. "
     "Extract ONLY the text that should be read aloud as narration. "
     "Preserve the original wording exactly — do not paraphrase. "
-    "Ignore page numbers, publisher info, and decorative text. "
+    "If this is the title page (or a page showing the book's title and/or author), "
+    "include the title and author — these SHOULD be read aloud. "
+    "Ignore page numbers, publisher/copyright info, ISBNs, dedications, and purely decorative text. "
     "If the page has no narratable text (e.g. pure illustration, blank, etc.) respond with exactly: NO_TEXT"
 )
 
